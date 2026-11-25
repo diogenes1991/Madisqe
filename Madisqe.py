@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import os
 import sys
 from time import localtime, mktime, strftime
@@ -10,7 +11,8 @@ from SchedulerConfig import SchedulerConfig
 
 
 class Madisqe(SchedulerConfig, ChannelPlanning, ProcessGeneration):
-    def __init__(self,CONFIGFILE):
+    def __init__(self, CONFIGFILE, *, core_only=False):
+        self.core_only = core_only
         
         StartTime = localtime()
 
@@ -83,7 +85,10 @@ class Madisqe(SchedulerConfig, ChannelPlanning, ProcessGeneration):
         print('     Generating matrix elements and Virtual Integrands             ')
         print('                                                                   ')
         
-        self.BuildOLP(False)
+        if self.core_only:
+            self.CollectChannels()
+        else:
+            self.BuildOLP(False)
         self.BuildVirtualIntegrands()
 
         print('                                                                   ')
@@ -94,7 +99,10 @@ class Madisqe(SchedulerConfig, ChannelPlanning, ProcessGeneration):
         print('                                                                   ')
         print('     Building Madisqe Interface                                    ')
         
-        self.BuildInterface()
+        if self.core_only:
+            self.CopyModelImplementation()
+        else:
+            self.BuildInterface()
         
         print('                                                                   ')
         print('     Interface building completed at '+strftime('%d %b %Y %H:%M:%S %Z',localtime()))
@@ -118,7 +126,7 @@ class Madisqe(SchedulerConfig, ChannelPlanning, ProcessGeneration):
             # self.DipoleStructures[DipoleStrucure].Show()
 
 
-def main(CONFIGFILE):
+def main(CONFIGFILE, *, core_only=False):
 
     print(r'''
 ####################################################################
@@ -136,12 +144,15 @@ def main(CONFIGFILE):
 #                                                                  #        
 ####################################################################
 ''')
-    MADISQE = Madisqe(CONFIGFILE)
+    Madisqe(CONFIGFILE, core_only=core_only)
 
 if __name__ == "__main__":
-    if len(sys.argv)<2:
-        print("\33[31mError\33[0m: No input file specified")
-    elif len(sys.argv)==2:
-        main(sys.argv[1])
-    else:
-        print("\33[31mError\33[0m: Too many arguments")
+    parser = argparse.ArgumentParser(description="Generate Madisqe process sources.")
+    parser.add_argument("config", help="process configuration file")
+    parser.add_argument(
+        "--core-only",
+        action="store_true",
+        help="generate model and integrands without external adapters or the application build",
+    )
+    args = parser.parse_args()
+    main(args.config, core_only=args.core_only)

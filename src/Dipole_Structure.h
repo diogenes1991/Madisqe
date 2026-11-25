@@ -2,7 +2,7 @@
 #define __DIPOLE_STRUCTURE_H__
 
 #include "OLP.h"
-#include "Model.h"
+#include <Model.h>
 #include "Dipole_Definitions.h"
 #include <string>
 #include <unordered_map>

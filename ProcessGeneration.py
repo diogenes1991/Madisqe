@@ -72,8 +72,12 @@ class ProcessGeneration:
 
     def CreateDirectories(self):
         MakeDir(self.SrcDir)
-        MakeDir(self.SrcDir+'/NLOX_Process')
+        if not self.core_only:
+            MakeDir(self.SrcDir+'/NLOX_Process')
         MakeDir(self.SrcDir+'/Code')
+
+    def CopyModelImplementation(self):
+        CopyFile(self.IntDir+'/Model.cpp', self.SrcDir+'/Model.cpp')
 
     def BuildInterface(self):
 
@@ -102,7 +106,9 @@ class ProcessGeneration:
 
         INPUTFILES = ['Run_Settings.input']
 
-        TOPLAYERFILES  = ['Main.cpp','Analysis.cpp','Model.cpp']
+        TOPLAYERFILES  = ['Main.cpp','Analysis.cpp']
+
+        self.CopyModelImplementation()
 
         ## for file in CODEFILES:
         ##     CopyFile(self.IntDir+'/'+file,self.SrcDir+'/Code/'+file)

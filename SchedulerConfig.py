@@ -26,7 +26,7 @@ class SchedulerConfig:
         for configuration in PATHS.keys():
             warn = True
             for line in configfile:
-                if configuration in line[1]:
+                if configuration == line[1].split('=', 1)[0].strip():
                     thisconfig = line[1].strip().split('=')
                     PATHS[thisconfig[0].strip()] = (thisconfig[1].strip()).split(',')[0]
                     warn = False
@@ -56,7 +56,9 @@ class SchedulerConfig:
                   'VERBOSE'      : [0] ,\
                   'STAGE'        : [0] }
 
-        REQUIRED = set(['INITIAL STATE','FINAL STATE','NLOX PATH','RECOLA PATH','RADIATIVE'])
+        REQUIRED = {'INITIAL STATE', 'FINAL STATE', 'RADIATIVE'}
+        if not self.core_only:
+            REQUIRED.update({'NLOX PATH', 'RECOLA PATH'})
 
         COMMCHAR = '#'
 
@@ -70,7 +72,7 @@ class SchedulerConfig:
         for configuration in CONFIG.keys():
             warn = True
             for line in configfile:
-                if configuration in line[1]:
+                if configuration == line[1].split('=', 1)[0].strip():
                     thisconfig = line[1].strip().split('=')
                     CONFIG[thisconfig[0].strip()] = (thisconfig[1].strip()).split(',')
                     warn = False
@@ -129,20 +131,8 @@ class SchedulerConfig:
         self.BornProc = Process(self.ini,self.fin,self.Model)
         self.path = self.config['PATH'][0]+"/"+str(self.RadiProc)
 
-        self.seed_tpl = self.config['SEED TEMP'][0]
-        if not os.path.exists(self.seed_tpl):
-            print('\33[31mError\33[0m: NLOX input seed',self.seed_tpl,'not found')
-            sys.exit()
-
-        self.nlox = self.config['NLOX PATH'][0]+'/nlox.py'
-        if not os.path.exists(self.nlox):
-            print('\33[31mError\33[0m: NLOX executable',self.nlox,'not found')
-            sys.exit()
-
-        self.recola = self.config['RECOLA PATH'][0]
-        if not os.path.exists(self.recola+'/recola2-2.2.2/librecola.so'):
-            print('\33[31mError\33[0m: RECOLA library: librecola.so not found at',self.recola+'/recola2-2.2.2')
-            sys.exit()
+        if not self.core_only:
+            self.CheckProviderPaths()
 
         self.stage = int(self.config['STAGE'][0])
 
@@ -155,3 +145,19 @@ class SchedulerConfig:
         self.IntDir = 'src'
         self.Inputs = 'input'
         self.SrcDir = self.path
+
+    def CheckProviderPaths(self):
+        self.seed_tpl = self.config['SEED TEMP'][0]
+        if not os.path.exists(self.seed_tpl):
+            print('\33[31mError\33[0m: NLOX input seed',self.seed_tpl,'not found')
+            sys.exit(1)
+
+        self.nlox = self.config['NLOX PATH'][0]+'/nlox.py'
+        if not os.path.exists(self.nlox):
+            print('\33[31mError\33[0m: NLOX executable',self.nlox,'not found')
+            sys.exit(1)
+
+        self.recola = self.config['RECOLA PATH'][0]
+        if not os.path.exists(self.recola+'/recola2-2.2.2/librecola.so'):
+            print('\33[31mError\33[0m: RECOLA library: librecola.so not found at',self.recola+'/recola2-2.2.2')
+            sys.exit(1)

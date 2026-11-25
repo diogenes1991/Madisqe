@@ -2,7 +2,7 @@
 #define __VIRTUAL_STRUCTURE_H__
 
 #include "OLP.h"
-#include "Model.h"
+#include <Model.h>
 #include <string>
 #include <unordered_map>
 

@@ -2,7 +2,7 @@
 #define __INTEGRAND_H__
 
 #include "OLP.h"
-#include "Model.h"
+#include <Model.h>
 
 class Integrand{
             
