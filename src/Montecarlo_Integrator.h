@@ -1,7 +1,9 @@
 #ifndef __MONTECARLOINTEGRATOR_H__
 #define __MONTECARLOINTEGRATOR_H__
 
+#include <functional>
 #include <iostream>
+#include <memory>
 
 class Montecarlo_Integrator{
 
@@ -25,5 +27,10 @@ class Montecarlo_Integrator{
         virtual void Integrate(Specifications * mc_specs, double* result, double* error) = 0;
 
 };
+
+using ScalarIntegrand = double (*)(double*, size_t, void*);
+using VectorIntegrand = int (*)(const int*, const double*, const int*, double*, void*);
+using IntegratorFactory = std::function<std::unique_ptr<Montecarlo_Integrator>(
+    ScalarIntegrand, VectorIntegrand, size_t)>;
 
 #endif

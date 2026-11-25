@@ -4,8 +4,7 @@
 #include "Four_Vector.h"
 #include "Constants.h"
 
-#include <gsl/gsl_sf_dilog.h>
-#define PolyLog2 gsl_sf_dilog
+double PolyLog2(double x);
 
 #define TESTMODE 0
 

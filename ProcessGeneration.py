@@ -106,7 +106,7 @@ class ProcessGeneration:
 
         INPUTFILES = ['Run_Settings.input']
 
-        TOPLAYERFILES  = ['Main.cpp','Analysis.cpp']
+        TOPLAYERFILES  = ['Main.cpp','Analysis.cpp','ProductionAdapters.cpp']
 
         self.CopyModelImplementation()
 

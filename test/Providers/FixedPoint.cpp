@@ -1,4 +1,5 @@
-#include "gg_Zbbbar_Virtual.h"
+#include "XSection_Integrator.h"
+#include "Dummy_PDF.h"
 
 #include <cassert>
 #include <cmath>
@@ -39,6 +40,24 @@ public:
     }
 };
 
+class FixedPointIntegrator final : public Montecarlo_Integrator {
+public:
+    FixedPointIntegrator(ScalarIntegrand integrate, size_t dimension)
+        : integrand(integrate) {
+        Dimension = dimension;
+    }
+
+    void Integrate(Specifications* specs, double* result, double* error) override {
+        std::vector<double> point(Dimension, 0.5);
+        *result = integrand(point.data(), point.size(), specs->Params);
+        *error = 0.0;
+        assert(std::isfinite(*result) && *result > 0.0);
+    }
+
+private:
+    ScalarIntegrand integrand;
+};
+
 int main() {
     RecordingProvider provider;
     Model model;
@@ -60,4 +79,17 @@ int main() {
     integrand.Virtual("as3ae1", 500.0, random, 91.0, &loop);
     assert(provider.calls == 3 && provider.order == "NLO");
     assert(provider.strongPower == 3 && provider.electromagneticPower == 1);
+
+    Dummy_PDF pdf;
+    auto makeIntegrator = [](ScalarIntegrand scalar, VectorIntegrand, size_t dim) {
+        return std::unique_ptr<Montecarlo_Integrator>(new FixedPointIntegrator(scalar, dim));
+    };
+    XSection_Integrator driver(&model, &provider, &pdf, makeIntegrator);
+    driver.SetScales(1000.0, 91.0, 91.0);
+    XSection_Integrator::XSection_Selector request{};
+    request.Channel = "gg_Zbbbar";
+    request.Integrand = "Born";
+    request.Coupling = "as2ae1";
+    driver.ComputeXSection(request, {});
+    assert(provider.calls == 4 && provider.order == "LO");
 }

@@ -2,8 +2,7 @@
 #define __XSECTION_INTEGRATOR_H__
 
 #include "XSection.h"
-#include "GSL_Integrator.h"
-#include "CUBA_Integrator.h"
+#include "Montecarlo_Integrator.h"
 #include "Analysis.h"
 
 class XSection_Integrator{
@@ -12,15 +11,11 @@ class XSection_Integrator{
     size_t NVarP = 3*NextV-3+2;
     size_t NVarS = 3*NextR-4+2;
 
-    Model * model;
-    OLP * Provider;
-    PDF_Set * PDF;
-    Montecarlo_Integrator *BIntegrator, *SIntegrator, *PIntegrator;
     std::vector<Histogram> Histograms;
+    XSection XSec;
+    std::unique_ptr<Montecarlo_Integrator> BIntegrator, SIntegrator, PIntegrator;
 
     public:
-
-        static XSection * XSec;
 
         struct XSection_Selector{
         std::string Channel;
@@ -30,58 +25,42 @@ class XSection_Integrator{
         size_t NVars;
         };
 
-        XSection_Integrator(Model * mod, OLP * prov, PDF_Set * pdf, std::string Integrator){
-            
-            model = mod;
-            PDF = pdf;
-            Provider = prov;
-
+        XSection_Integrator(Model* model, OLP* provider, PDF_Set* pdf,
+                            const IntegratorFactory& makeIntegrator)
+            : XSec(&Histograms, model, provider, pdf),
+              BIntegrator(makeIntegrator(GSL_Integrand, CUBA_Integrand, NVarB)),
+              SIntegrator(makeIntegrator(GSL_Integrand, CUBA_Integrand, NVarS)),
+              PIntegrator(makeIntegrator(GSL_Integrand, CUBA_Integrand, NVarP)) {
             Analysis::InitializeHistograms(&Histograms);
-            XSec = new XSection(&Histograms,model,Provider,PDF);
-            
-            if(Integrator=="GSL"){
-                BIntegrator = new GSL_Integrator(GSL_Integrand,NVarB);
-                SIntegrator = new GSL_Integrator(GSL_Integrand,NVarS);
-                PIntegrator = new GSL_Integrator(GSL_Integrand,NVarP);
-            }
-            else if(Integrator=="CUBA"){
-                BIntegrator = new CUBA_Integrator(CUBA_Integrand,NVarB);
-                SIntegrator = new CUBA_Integrator(CUBA_Integrand,NVarS);
-                PIntegrator = new CUBA_Integrator(CUBA_Integrand,NVarP);
-            }
-            else{
-                std::cout<<"Error: Integrator interface not supported:"<<Integrator<<std::endl;
-                throw "Unrecognized Integrator Interface";
-            }
         }
 
-        ~XSection_Integrator(){
-            delete XSec;
-            delete BIntegrator;
-            delete SIntegrator;
-            delete PIntegrator;
-        }
-            
-        static double GSL_Integrand(double *x, size_t dim, void* param){
-            double rval;
-            XSection_Selector xs;
-            xs = *(XSection_Selector*)(param);
-            XSec->SetXSection(xs.Catalog,xs.Integrand,xs.Channel,xs.Coupling,x,xs.NVars,&rval);
-            return rval;
+        void SetScales(double sqrts, double muRen, double muFac) {
+            XSec.SetScales(sqrts, muRen, muFac);
         }
 
-        static int CUBA_Integrand(const int *ndim, const double x[], const int *ncomp, double f[], void* param){
-            double rval;
-            XSection_Selector xs;
-            xs = *(XSection_Selector*)(param);
-            size_t dim = *ndim;
-            double y[dim];
-            for(size_t i=0;i<dim;i++)y[i]=x[i];
-            XSec->SetXSection(xs.Catalog,xs.Integrand,xs.Channel,xs.Coupling,y,xs.NVars,&rval);
-            f[0] = rval;
+    private:
+        struct Evaluation {
+            XSection& section;
+            const XSection_Selector& selector;
+        };
+
+        static double GSL_Integrand(double* x, size_t dim, void* param) {
+            auto& evaluation = *static_cast<Evaluation*>(param);
+            const auto& xs = evaluation.selector;
+            double result;
+            evaluation.section.SetXSection(xs.Catalog, xs.Integrand, xs.Channel,
+                                            xs.Coupling, x, dim, &result);
+            return result;
+        }
+
+        static int CUBA_Integrand(const int* ndim, const double x[],
+                                  const int*, double f[], void* param) {
+            std::vector<double> point(x, x + *ndim);
+            f[0] = GSL_Integrand(point.data(), point.size(), param);
             return 0;
         }
 
+    public:
         void ComputeXSection(XSection_Selector XS, Montecarlo_Integrator::Specifications MC){
             Montecarlo_Integrator::Specifications mc;
             mc.Method = MC.Method;
@@ -94,22 +73,22 @@ class XSection_Integrator{
             Clock C1;
 
             if (XS.Integrand=="Born"||XS.Integrand=="Virtual"){
-                MCI = BIntegrator;
+                MCI = BIntegrator.get();
                 XS.Catalog = "Virtuals";
                 XS.NVars = MCI->Dimension;
             }
             else if (XS.Integrand=="Endpoint"){
-                MCI = BIntegrator;
+                MCI = BIntegrator.get();
                 XS.Catalog = "Reals";
                 XS.NVars = MCI->Dimension;
             }
             else if (XS.Integrand=="PlusDistribution"){
-                MCI = PIntegrator;
+                MCI = PIntegrator.get();
                 XS.Catalog = "Reals";
                 XS.NVars = MCI->Dimension;
             }
             else if (XS.Integrand=="Subtracted"){
-                MCI = SIntegrator;
+                MCI = SIntegrator.get();
                 XS.Catalog = "Reals";
                 XS.NVars = MCI->Dimension;
             }
@@ -118,7 +97,8 @@ class XSection_Integrator{
                 throw "Unrecognized Integrand";
             }
 
-            mc.Params = &XS;
+            Evaluation evaluation{XSec, XS};
+            mc.Params = &evaluation;
             double res,err;
             MCI->Integrate(&mc,&res,&err);
             std::cout<<"XSection = "<<res<<" +/- "<<err<<std::endl;
@@ -132,7 +112,5 @@ class XSection_Integrator{
             } 
         }
 };
-
-XSection * XSection_Integrator::XSec = NULL;
 
 #endif

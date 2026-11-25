@@ -33,7 +33,6 @@ class ProviderTest(unittest.TestCase):
                 workspace,
             )
             process = workspace / "pp_Zjbjbj"
-            channel = process / "Virtual" / "gg_Zbbbar"
             self.assertTrue((process / "Code" / "Real.h").is_file(), generated.stdout)
             self.assertTrue((process / "Code" / "Virtual.h").is_file())
             self.assertFalse((process / "NLOX_Process").exists())
@@ -43,15 +42,35 @@ class ProviderTest(unittest.TestCase):
             compiler = os.environ.get("CXX", "g++")
             if shutil.which(compiler) is None:
                 self.skipTest(f"C++ compiler {compiler!r} is unavailable")
+            for header in ("XSection.h", "XSection_Integrator.h", "ProductionAdapters.h"):
+                source = workspace / "header.cpp"
+                source.write_text(f'#include "{header}"\n')
+                self.run_checked(
+                    [compiler, "-std=gnu++11", "-fsyntax-only",
+                     "-I", str(process / "Code"), "-I", str(ROOT / "src"), str(source)],
+                    workspace,
+                )
+            self.run_checked(
+                [compiler, "-std=gnu++11", "-fsyntax-only",
+                 "-I", str(process / "Code"), "-I", str(ROOT / "src"),
+                 str(ROOT / "src" / "Main.cpp")],
+                workspace,
+            )
             executable = workspace / "fixed-point"
+            generated_sources = workspace / "integrands.cpp"
+            generated_sources.write_text("".join(
+                f'#include "{source}"\n'
+                for group in ("Real", "Virtual")
+                for source in sorted((process / group).glob("*/*.cpp"))
+            ))
             self.run_checked(
                 [
                     compiler, "-std=gnu++11",
                     "-I", str(process / "Code"),
                     "-I", str(ROOT / "src"),
-                    "-I", str(channel),
                     str(Path(__file__).with_name("FixedPoint.cpp")),
-                    str(channel / "gg_Zbbbar_Virtual.cpp"),
+                    str(generated_sources),
+                    str(ROOT / "src" / "Analysis.cpp"),
                     str(process / "Model.cpp"),
                     "-o", str(executable),
                 ],

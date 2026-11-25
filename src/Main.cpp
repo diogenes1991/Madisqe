@@ -2,6 +2,7 @@
 #include <iostream>
 #include "Input.h"
 #include "XSection_Integrator.h"
+#include "ProductionAdapters.h"
 
 void ShowLetterHead(){
     std::cout<<"###################################################################"<<std::endl;
@@ -56,11 +57,11 @@ class CommandHandler{
 
 class MatrixElementTester : public CommandHandler{
 
-    Model * model;
-    NLOX_OLP   * NLOX_Proc;
-    RECOLA_OLP * RECOLA_Proc;
-    VirtualIntegrands * NLOX_Virt;
-    VirtualIntegrands * RECOLA_Virt;
+    std::unique_ptr<Model> model;
+    std::unique_ptr<OLP> NLOX_Proc;
+    std::unique_ptr<OLP> RECOLA_Proc;
+    std::unique_ptr<VirtualIntegrands> NLOX_Virt;
+    std::unique_ptr<VirtualIntegrands> RECOLA_Virt;
 
     static constexpr double sqrts = 13000;
     static constexpr double fixed_mu = 1000;
@@ -81,22 +82,13 @@ class MatrixElementTester : public CommandHandler{
             CommandMap.insert({"SetCoupling",3});
             CommandMap.insert({"SetRandom",4});
             CommandMap.insert({"Test",5});
-            model = new Model;
-            NLOX_Proc = new NLOX_OLP(model);
-            RECOLA_Proc = new RECOLA_OLP(model);
-            NLOX_Virt = new VirtualIntegrands(NLOX_Proc,model);
-            RECOLA_Virt = new VirtualIntegrands(RECOLA_Proc,model);
+            model.reset(new Model);
+            NLOX_Proc = MakeOLP("NLOX", model.get());
+            RECOLA_Proc = MakeOLP("RECOLA", model.get());
+            NLOX_Virt.reset(new VirtualIntegrands(NLOX_Proc.get(), model.get()));
+            RECOLA_Virt.reset(new VirtualIntegrands(RECOLA_Proc.get(), model.get()));
             Start();
         }
-
-        ~MatrixElementTester(){
-            delete NLOX_Virt;
-            delete RECOLA_Virt;
-            delete NLOX_Proc;
-            delete RECOLA_Proc;
-            delete model;
-            
-        };
 
         void Start(){
             std::cout<<"Entering Testing Envionment"<<std::endl;
@@ -194,10 +186,10 @@ class MatrixElementTester : public CommandHandler{
 
 class XSectionTester : public Input{
 
-    OLP * Provider;
-    PDF_Set * PDF;
-    Model * model;
-    XSection_Integrator * XSec_Int;
+    std::unique_ptr<Model> model;
+    std::unique_ptr<OLP> Provider;
+    std::unique_ptr<PDF_Set> PDF;
+    std::unique_ptr<XSection_Integrator> XSec_Int;
 
     public:
 
@@ -239,35 +231,12 @@ class XSectionTester : public Input{
             double muRen = stod(InputFile.at("muRen"));
             double muFac = stod(InputFile.at("muFac"));
 
-            model = new Model();
-
-            if     (ProviderName=="NLOX") Provider = new NLOX_OLP(model);
-            else if(ProviderName=="RECOLA") Provider = new RECOLA_OLP(model);
-            else {
-                std::cout<<"Unsoported OLP"<<std::endl;
-                throw "Unsoported OLP";
-            }
-
-            if (PDFSet=="Dummy") PDF = new Dummy_PDF();
-            else {
-                try {
-                    PDF = new LHA_PDF(PDFSet);
-                }
-                catch(const char* err){
-                    std::cout<<"Catching an instance of \""<<err<<"\" error"<<std::endl;
-
-                }
-            }
-
-            XSec_Int = new XSection_Integrator(model,Provider,PDF,Integrator);
-            XSec_Int->XSec->SetScales(sqrts,muRen,muFac);     
-            
-        }
-
-        ~XSectionTester(){
-            delete XSec_Int;
-            delete PDF;
-            delete Provider;
+            model.reset(new Model);
+            Provider = MakeOLP(ProviderName, model.get());
+            PDF = MakePDF(PDFSet);
+            XSec_Int.reset(new XSection_Integrator(
+                model.get(), Provider.get(), PDF.get(), MakeIntegratorFactory(Integrator)));
+            XSec_Int->SetScales(sqrts, muRen, muFac);
         }
 
         void TestXSection(){

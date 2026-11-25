@@ -3,11 +3,8 @@
 
 #include "Real.h"
 #include "Virtual.h"
-#include "NLOX_OLP.h"
-#include "RECOLA_OLP.h"
-#include "Dummy_PDF.h"
-#include "LHA_PDF.h"
 #include "Analysis.h"
+#include "PDF_Set.h"
 #include "Constants.h"
 
 class XSection{
