@@ -26,13 +26,13 @@ class CompositeParticle:
         self.nam = Name
         for particle in Subparticles:
             if not isinstance(particle,Particle):
-                print "\33[31mError\33[0m: In composite particle",self.nam,"a non-particle constituent has been passed:",particle
+                print("\33[31mError\33[0m: In composite particle",self.nam,"a non-particle constituent has been passed:",particle)
                 sys.exit()
         self.sub = Subparticles
         
         if Mother!=None:
             if not isinstance(Mother,Particle):
-                print "\33[31mError\33[0m: In composite particle",self.nam,"a non-particle parent has been passed:",Mother
+                print("\33[31mError\33[0m: In composite particle",self.nam,"a non-particle parent has been passed:",Mother)
                 sys.exit()
             self.parent = Mother
             self.degree = 2
@@ -40,7 +40,7 @@ class CompositeParticle:
             
     def DaughterOf(self,parent,degree=2):
         if not isinstance(parent,Particle):
-            print "\33[31mError\33[0m: In composite particle",self.nam,"a non-particle parent has been passed:",parent
+            print("\33[31mError\33[0m: In composite particle",self.nam,"a non-particle parent has been passed:",parent)
             sys.exit()
         self.parent = parent
         self.degree = degree
@@ -132,7 +132,7 @@ class Model:
                 for Par in aux:
                     if Par not in CC:
                         CC.append(Par)
-                        CC.sort()
+                        CC.sort(key=lambda particle: particle.nam)
                         breakwhile = 0
                 cc = aux
 
@@ -300,7 +300,7 @@ class Process:
                     line += particle.nam+" "
                     count += 1
                 line += "\n"
-            print line
+            print(line)
          
         def write(self):
             name = str(self)
@@ -317,7 +317,7 @@ class Process:
                     count += 1
                 w += '\n'
                 f.write(w)
-            print len(self.scatters),"subprocesses written"
+            print(len(self.scatters),"subprocesses written")
             
         def InheritSymmetries(self): 
             self.sym_weights = {}
@@ -357,7 +357,7 @@ class Process:
                 ac = i
                 for j in bounds:
                     addres.append(ac%j)
-                    ac = ac/j
+                    ac //= j
                     
                 pars = []
                 for j in range(len(bounds)):
@@ -516,7 +516,7 @@ class Process:
                 LocalAddress = ChannelNumber
                 for LocalPlace in Bounds:
                     Addres.append(LocalAddress%LocalPlace)
-                    LocalAddress = LocalAddress/LocalPlace
+                    LocalAddress //= LocalPlace
                     
                 Particles = []
                 for ParticleSelector in range(len(Bounds)):

@@ -106,7 +106,7 @@ class NLOX_OLP(OLP):
         count = 1
         tot = str(len(self.ReducedChannels))
         for Ch in self.ReducedChannels:
-            print 'Generating',self.ReducedChannels[Ch]['Type'],'channel:',Ch,'('+str(count)+'/'+tot+')'
+            print('Generating',self.ReducedChannels[Ch]['Type'],'channel:',Ch,'('+str(count)+'/'+tot+')')
             cmd = self.nlox+' '+Ch +'.in > '+Ch+'.log'
             os.system(cmd)
             cmd = 'mv '+Ch+'.log '+self.Path+'/NLOX_Process/'+Ch

@@ -27,7 +27,7 @@ def find_substring(string, substring):
 def MakeDir(Path):
         line = 'mkdir -p '+Path
         if os.path.exists(Path):
-            print "\33[31mError\33[0m: MakeDir:",Path,"already exists"
+            print("\33[31mError\33[0m: MakeDir:",Path,"already exists")
             sys.exit()
         os.system(line)
     

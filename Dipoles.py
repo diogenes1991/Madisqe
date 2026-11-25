@@ -134,8 +134,8 @@ class DipoleStructure:
         ##
         ##
 
-        print '************************************************'
-        print 'Dipole Structures for '+str(self.Radiative)
+        print('************************************************')
+        print('Dipole Structures for '+str(self.Radiative))
         
         RadiativeCouplings = self.Radiative.Model.GetCPS(self.Radiative.Particles)
         
@@ -176,20 +176,20 @@ class DipoleStructure:
                 BundledParticle = Dipole.DecayChannel.Particles[BPIndex]
 
                 DipoleSubtype = ('I' if (Dipole.Type == 'ai' or Dipole.Type == 'ia') else 'F')
-                print Dipole.Type,DipoleSubtype
+                print(Dipole.Type,DipoleSubtype)
                 for Spectator in Dipole.Spectators:
                     if Spectator['Index'] < NInitials:
-                        print TAB4+'Add',Dipole.DipoleType,'D',Dipole.Type,',b'
-                        print Dipole
-                        print "BundledParticle = ",Dipole.DecayChannel.Particles[BPIndex],BPIndex
+                        print(TAB4+'Add',Dipole.DipoleType,'D',Dipole.Type,',b')
+                        print(Dipole)
+                        print("BundledParticle = ",Dipole.DecayChannel.Particles[BPIndex],BPIndex)
                         DipoleSubtype += 'I'
-                        print DipoleSubtype
+                        print(DipoleSubtype)
                     else:
-                        print TAB4+'Add',Dipole.DipoleType,'D',Dipole.Type,',k'
-                        print Dipole
-                        print "BundledParticle = ",Dipole.DecayChannel.Particles[BPIndex],BPIndex
+                        print(TAB4+'Add',Dipole.DipoleType,'D',Dipole.Type,',k')
+                        print(Dipole)
+                        print("BundledParticle = ",Dipole.DecayChannel.Particles[BPIndex],BPIndex)
                         DipoleSubtype += 'F'
-                        print DipoleSubtype
+                        print(DipoleSubtype)
 
                     DICT['SubProcSub'] += TAB8+'//'+str(Dipole.Parent)+' : (('+str(Dipole.DecayChannel)+' '+str(Dipole.Indices)+') -> '+str(Dipole.UnderlyingBorn)+')\n'
                     DICT['SubProcSub'] += TAB8+'//'+'Spectated by '+str(Spectator['Particle'])+'('+str(Spectator['Index'])+')\n'
@@ -210,7 +210,7 @@ class DipoleStructure:
             DICT['SubProcSub'] += TAB4+'}\n\n'  
 
 
-        print '************************************************'
+        print('************************************************')
 
         DIPOLESTRUCTUREC = Template(template_path+'/Dipole_Functions_tpl.cpp',dest_path+'/'+str(self.Radiative)+'_Real.cpp',DICT)
         DIPOLESTRUCTUREH = Template(template_path+'/Dipole_Functions_tpl.h',dest_path+'/'+str(self.Radiative)+'_Real.h',DICT)
@@ -303,8 +303,8 @@ class DipoleStructure:
             if len(EWKDipoles):
                 CPHEAD += TAB6+'double born[3];\n'
             if len(QCDDipoles):
-                CPHEAD += TAB6+'double borncc['+str(1+(self.RadiProc.nex-1)*(self.RadiProc.nex-2)/2)+'];\n'
-                CPHEAD += TAB6+'ColorAndSpinMatrix BornCCSC('+str(1+(self.RadiProc.nex-1)*(self.RadiProc.nex-2)/2)+');\n'
+                CPHEAD += TAB6+'double borncc['+str(1+(self.RadiProc.nex-1)*(self.RadiProc.nex-2)//2)+'];\n'
+                CPHEAD += TAB6+'ColorAndSpinMatrix BornCCSC('+str(1+(self.RadiProc.nex-1)*(self.RadiProc.nex-2)//2)+');\n'
                     
                     
             DICT['SubProcSub'] += CPHEAD
